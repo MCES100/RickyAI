@@ -1,548 +1,419 @@
----
-title: chat-ui
-emoji: 🔥
-colorFrom: purple
-colorTo: purple
-sdk: docker
-pinned: false
-license: apache-2.0
-base_path: /chat
-app_port: 3000
----
+# Text generation web UI
 
-# Chat UI
+A Gradio web UI for Large Language Models.
 
-![Chat UI repository thumbnail](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/chatui-websearch.png)
+Its goal is to become the [AUTOMATIC1111/stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui) of text generation.
 
-A chat interface using open source models, eg OpenAssistant or Llama. It is a SvelteKit app and it powers the [HuggingChat app on hf.co/chat](https://huggingface.co/chat).
+|![Image1](https://github.com/oobabooga/screenshots/raw/main/print_instruct.png) | ![Image2](https://github.com/oobabooga/screenshots/raw/main/print_chat.png) |
+|:---:|:---:|
+|![Image1](https://github.com/oobabooga/screenshots/raw/main/print_default.png) | ![Image2](https://github.com/oobabooga/screenshots/raw/main/print_parameters.png) |
 
-0. [No Setup Deploy](#no-setup-deploy)
-1. [Setup](#setup)
-2. [Launch](#launch)
-3. [Web Search](#web-search)
-4. [Text Embedding Models](#text-embedding-models)
-5. [Extra parameters](#extra-parameters)
-6. [Deploying to a HF Space](#deploying-to-a-hf-space)
-7. [Building](#building)
+## Features
 
-## No Setup Deploy
+* 3 interface modes: default (two columns), notebook, and chat.
+* Multiple model backends: [Transformers](https://github.com/huggingface/transformers), [llama.cpp](https://github.com/ggerganov/llama.cpp) (through [llama-cpp-python](https://github.com/abetlen/llama-cpp-python)), [ExLlamaV2](https://github.com/turboderp/exllamav2), [AutoGPTQ](https://github.com/PanQiWei/AutoGPTQ), [AutoAWQ](https://github.com/casper-hansen/AutoAWQ), [GPTQ-for-LLaMa](https://github.com/qwopqwop200/GPTQ-for-LLaMa), [CTransformers](https://github.com/marella/ctransformers), [QuIP#](https://github.com/Cornell-RelaxML/quip-sharp).
+* Dropdown menu for quickly switching between different models.
+* Large number of extensions (built-in and user-contributed), including Coqui TTS for realistic voice outputs, Whisper STT for voice inputs, translation, [multimodal pipelines](https://github.com/oobabooga/text-generation-webui/tree/main/extensions/multimodal), vector databases, Stable Diffusion integration, and a lot more. See [the wiki](https://github.com/oobabooga/text-generation-webui/wiki/07-%E2%80%90-Extensions) and [the extensions directory](https://github.com/oobabooga/text-generation-webui-extensions) for details.
+* [Chat with custom characters](https://github.com/oobabooga/text-generation-webui/wiki/03-%E2%80%90-Parameters-Tab#character).
+* Precise chat templates for instruction-following models, including Llama-2-chat, Alpaca, Vicuna, Mistral.
+* LoRA: train new LoRAs with your own data, load/unload LoRAs on the fly for generation.
+* Transformers library integration: load models in 4-bit or 8-bit precision through bitsandbytes, use llama.cpp with transformers samplers (`llamacpp_HF` loader), CPU inference in 32-bit precision using PyTorch.
+* OpenAI-compatible API server with Chat and Completions endpoints -- see the [examples](https://github.com/oobabooga/text-generation-webui/wiki/12-%E2%80%90-OpenAI-API#examples).
 
-If you don't want to configure, setup, and launch your own Chat UI yourself, you can use this option as a fast deploy alternative.
+## How to install
 
-You can deploy your own customized Chat UI instance with any supported [LLM](https://huggingface.co/models?pipeline_tag=text-generation&sort=trending) of your choice on [Hugging Face Spaces](https://huggingface.co/spaces). To do so, use the chat-ui template [available here](https://huggingface.co/new-space?template=huggingchat/chat-ui-template).
+1) Clone or [download](https://github.com/oobabooga/text-generation-webui/archive/refs/heads/main.zip) the repository.
+2) Run the `start_linux.sh`, `start_windows.bat`, `start_macos.sh`, or `start_wsl.bat` script depending on your OS.
+3) Select your GPU vendor when asked.
+4) Once the installation ends, browse to `http://localhost:7860/?__theme=dark`.
+5) Have fun!
 
-Set `HF_TOKEN` in [Space secrets](https://huggingface.co/docs/hub/spaces-overview#managing-secrets-and-environment-variables) to deploy a model with gated access or a model in a private repository. It's also compatible with [Inference for PROs](https://huggingface.co/blog/inference-pro) curated list of powerful models with higher rate limits. Make sure to create your personal token first in your [User Access Tokens settings](https://huggingface.co/settings/tokens).
+To restart the web UI in the future, just run the `start_` script again. This script creates an `installer_files` folder where it sets up the project's requirements. In case you need to reinstall the requirements, you can simply delete that folder and start the web UI again.
 
-Read the full tutorial [here](https://huggingface.co/docs/hub/spaces-sdks-docker-chatui#chatui-on-spaces).
+The script accepts command-line flags. Alternatively, you can edit the `CMD_FLAGS.txt` file with a text editor and add your flags there.
 
-## Setup
+To get updates in the future, run `update_linux.sh`, `update_windows.bat`, `update_macos.sh`, or `update_wsl.bat`.
 
-The default config for Chat UI is stored in the `.env` file. You will need to override some values to get Chat UI to run locally. This is done in `.env.local`.
+<details>
+<summary>
+Setup details and information about installing manually
+</summary>
 
-Start by creating a `.env.local` file in the root of the repository. The bare minimum config you need to get Chat UI to run locally is the following:
+### One-click-installer
 
-```env
-MONGODB_URL=<the URL to your MongoDB instance>
-HF_TOKEN=<your access token>
-```
+The script uses Miniconda to set up a Conda environment in the `installer_files` folder.
 
-### Database
+If you ever need to install something manually in the `installer_files` environment, you can launch an interactive shell using the cmd script: `cmd_linux.sh`, `cmd_windows.bat`, `cmd_macos.sh`, or `cmd_wsl.bat`.
 
-The chat history is stored in a MongoDB instance, and having a DB instance available is needed for Chat UI to work.
+* There is no need to run any of those scripts (`start_`, `update_`, or `cmd_`) as admin/root.
+* For additional instructions about AMD and WSL setup, consult [the documentation](https://github.com/oobabooga/text-generation-webui/wiki).
+* For automated installation, you can use the `GPU_CHOICE`, `USE_CUDA118`, `LAUNCH_AFTER_INSTALL`, and `INSTALL_EXTENSIONS` environment variables. For instance: `GPU_CHOICE=A USE_CUDA118=FALSE LAUNCH_AFTER_INSTALL=FALSE INSTALL_EXTENSIONS=FALSE ./start_linux.sh`.
 
-You can use a local MongoDB instance. The easiest way is to spin one up using docker:
+### Manual installation using Conda
 
-```bash
-docker run -d -p 27017:27017 --name mongo-chatui mongo:latest
-```
+Recommended if you have some experience with the command-line.
 
-In which case the url of your DB will be `MONGODB_URL=mongodb://localhost:27017`.
+#### 0. Install Conda
 
-Alternatively, you can use a [free MongoDB Atlas](https://www.mongodb.com/pricing) instance for this, Chat UI should fit comfortably within their free tier. After which you can set the `MONGODB_URL` variable in `.env.local` to match your instance.
+https://docs.conda.io/en/latest/miniconda.html
 
-### Hugging Face Access Token
-
-If you use a remote inference endpoint, you will need a Hugging Face access token to run Chat UI locally. You can get one from [your Hugging Face profile](https://huggingface.co/settings/tokens).
-
-## Launch
-
-After you're done with the `.env.local` file you can run Chat UI locally with:
-
-```bash
-npm install
-npm run dev
-```
-
-## Web Search
-
-Chat UI features a powerful Web Search feature. It works by:
-
-1. Generating an appropriate search query from the user prompt.
-2. Performing web search and extracting content from webpages.
-3. Creating embeddings from texts using a text embedding model.
-4. From these embeddings, find the ones that are closest to the user query using a vector similarity search. Specifically, we use `inner product` distance.
-5. Get the corresponding texts to those closest embeddings and perform [Retrieval-Augmented Generation](https://huggingface.co/papers/2005.11401) (i.e. expand user prompt by adding those texts so that an LLM can use this information).
-
-## Text Embedding Models
-
-By default (for backward compatibility), when `TEXT_EMBEDDING_MODELS` environment variable is not defined, [transformers.js](https://huggingface.co/docs/transformers.js) embedding models will be used for embedding tasks, specifically, [Xenova/gte-small](https://huggingface.co/Xenova/gte-small) model.
-
-You can customize the embedding model by setting `TEXT_EMBEDDING_MODELS` in your `.env.local` file. For example:
-
-```env
-TEXT_EMBEDDING_MODELS = `[
-  {
-    "name": "Xenova/gte-small",
-    "displayName": "Xenova/gte-small",
-    "description": "locally running embedding",
-    "chunkCharLength": 512,
-    "endpoints": [
-      {"type": "transformersjs"}
-    ]
-  },
-  {
-    "name": "intfloat/e5-base-v2",
-    "displayName": "intfloat/e5-base-v2",
-    "description": "hosted embedding model",
-    "chunkCharLength": 768,
-    "preQuery": "query: ", # See https://huggingface.co/intfloat/e5-base-v2#faq
-    "prePassage": "passage: ", # See https://huggingface.co/intfloat/e5-base-v2#faq
-    "endpoints": [
-      {
-        "type": "tei",
-        "url": "http://127.0.0.1:8080/",
-        "authorization": "TOKEN_TYPE TOKEN" // optional authorization field. Example: "Basic VVNFUjpQQVNT"
-      }
-    ]
-  }
-]`
-```
-
-The required fields are `name`, `chunkCharLength` and `endpoints`.
-Supported text embedding backends are: [`transformers.js`](https://huggingface.co/docs/transformers.js) and [`TEI`](https://github.com/huggingface/text-embeddings-inference). `transformers.js` models run locally as part of `chat-ui`, whereas `TEI` models run in a different environment & accessed through an API endpoint.
-
-When more than one embedding models are supplied in `.env.local` file, the first will be used by default, and the others will only be used on LLM's which configured `embeddingModel` to the name of the model.
-
-## Extra parameters
-
-### OpenID connect
-
-The login feature is disabled by default and users are attributed a unique ID based on their browser. But if you want to use OpenID to authenticate your users, you can add the following to your `.env.local` file:
-
-```env
-OPENID_CONFIG=`{
-  PROVIDER_URL: "<your OIDC issuer>",
-  CLIENT_ID: "<your OIDC client ID>",
-  CLIENT_SECRET: "<your OIDC client secret>",
-  SCOPES: "openid profile",
-  TOLERANCE: // optional
-  RESOURCE: // optional
-}`
-```
-
-These variables will enable the openID sign-in modal for users.
-
-### Theming
-
-You can use a few environment variables to customize the look and feel of chat-ui. These are by default:
-
-```env
-PUBLIC_APP_NAME=ChatUI
-PUBLIC_APP_ASSETS=chatui
-PUBLIC_APP_COLOR=blue
-PUBLIC_APP_DESCRIPTION="Making the community's best AI chat models available to everyone."
-PUBLIC_APP_DATA_SHARING=
-PUBLIC_APP_DISCLAIMER=
-```
-
-- `PUBLIC_APP_NAME` The name used as a title throughout the app.
-- `PUBLIC_APP_ASSETS` Is used to find logos & favicons in `static/$PUBLIC_APP_ASSETS`, current options are `chatui` and `huggingchat`.
-- `PUBLIC_APP_COLOR` Can be any of the [tailwind colors](https://tailwindcss.com/docs/customizing-colors#default-color-palette).
-- `PUBLIC_APP_DATA_SHARING` Can be set to 1 to add a toggle in the user settings that lets your users opt-in to data sharing with models creator.
-- `PUBLIC_APP_DISCLAIMER` If set to 1, we show a disclaimer about generated outputs on login.
-
-### Web Search config
-
-You can enable the web search through an API by adding `YDC_API_KEY` ([docs.you.com](https://docs.you.com)) or `SERPER_API_KEY` ([serper.dev](https://serper.dev/)) or `SERPAPI_KEY` ([serpapi.com](https://serpapi.com/)) or `SERPSTACK_API_KEY` ([serpstack.com](https://serpstack.com/)) to your `.env.local`.
-
-You can also simply enable the local websearch by setting `USE_LOCAL_WEBSEARCH=true` in your `.env.local`.
-
-### Custom models
-
-You can customize the parameters passed to the model or even use a new model by updating the `MODELS` variable in your `.env.local`. The default one can be found in `.env` and looks like this :
-
-```env
-MODELS=`[
-  {
-    "name": "OpenAssistant/oasst-sft-4-pythia-12b-epoch-3.5",
-    "datasetName": "OpenAssistant/oasst1",
-    "description": "A good alternative to ChatGPT",
-    "websiteUrl": "https://open-assistant.io",
-    "userMessageToken": "<|prompter|>", # This does not need to be a token, can be any string
-    "assistantMessageToken": "<|assistant|>", # This does not need to be a token, can be any string
-    "userMessageEndToken": "<|endoftext|>", # Applies only to user messages. Can be any string.
-    "assistantMessageEndToken": "<|endoftext|>", # Applies only to assistant messages. Can be any string.
-    "preprompt": "Below are a series of dialogues between various people and an AI assistant. The AI tries to be helpful, polite, honest, sophisticated, emotionally aware, and humble but knowledgeable. The assistant is happy to help with almost anything and will do its best to understand exactly what is needed. It also tries to avoid giving false or misleading information, and it caveats when it isn't entirely sure about the right answer. That said, the assistant is practical and really does its best, and doesn't let caution get too much in the way of being useful.\n-----\n",
-    "promptExamples": [
-      {
-        "title": "Write an email from bullet list",
-        "prompt": "As a restaurant owner, write a professional email to the supplier to get these products every week: \n\n- Wine (x10)\n- Eggs (x24)\n- Bread (x12)"
-      }, {
-        "title": "Code a snake game",
-        "prompt": "Code a basic snake game in python and give explanations for each step."
-      }, {
-        "title": "Assist in a task",
-        "prompt": "How do I make a delicious lemon cheesecake?"
-      }
-    ],
-    "parameters": {
-      "temperature": 0.9,
-      "top_p": 0.95,
-      "repetition_penalty": 1.2,
-      "top_k": 50,
-      "truncate": 1000,
-      "max_new_tokens": 1024,
-      "stop": ["<|endoftext|>"]  # This does not need to be tokens, can be any list of strings
-    }
-  }
-]`
+On Linux or WSL, it can be automatically installed with these two commands ([source](https://educe-ubc.github.io/conda.html)):
 
 ```
-
-You can change things like the parameters, or customize the preprompt to better suit your needs. You can also add more models by adding more objects to the array, with different preprompts for example.
-
-#### chatPromptTemplate
-
-When querying the model for a chat response, the `chatPromptTemplate` template is used. `messages` is an array of chat messages, it has the format `[{ content: string }, ...]`. To identify if a message is a user message or an assistant message the `ifUser` and `ifAssistant` block helpers can be used.
-
-The following is the default `chatPromptTemplate`, although newlines and indentiation have been added for readability. You can find the prompts used in production for HuggingChat [here](https://github.com/huggingface/chat-ui/blob/main/PROMPTS.md).
-
-```prompt
-{{preprompt}}
-{{#each messages}}
-  {{#ifUser}}{{@root.userMessageToken}}{{content}}{{@root.userMessageEndToken}}{{/ifUser}}
-  {{#ifAssistant}}{{@root.assistantMessageToken}}{{content}}{{@root.assistantMessageEndToken}}{{/ifAssistant}}
-{{/each}}
-{{assistantMessageToken}}
+curl -sL "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" > "Miniconda3.sh"
+bash Miniconda3.sh
 ```
 
-#### Multi modal model
-
-We currently only support IDEFICS as a multimodal model, hosted on TGI. You can enable it by using the followin config (if you have a PRO HF Api token):
-
-```env
-    {
-      "name": "HuggingFaceM4/idefics-80b-instruct",
-      "multimodal" : true,
-      "description": "IDEFICS is the new multimodal model by Hugging Face.",
-      "preprompt": "",
-      "chatPromptTemplate" : "{{#each messages}}{{#ifUser}}User: {{content}}{{/ifUser}}<end_of_utterance>\nAssistant: {{#ifAssistant}}{{content}}\n{{/ifAssistant}}{{/each}}",
-      "parameters": {
-        "temperature": 0.1,
-        "top_p": 0.95,
-        "repetition_penalty": 1.2,
-        "top_k": 12,
-        "truncate": 1000,
-        "max_new_tokens": 1024,
-        "stop": ["<end_of_utterance>", "User:", "\nUser:"]
-      }
-    }
-```
-
-#### Running your own models using a custom endpoint
-
-If you want to, instead of hitting models on the Hugging Face Inference API, you can run your own models locally.
-
-A good option is to hit a [text-generation-inference](https://github.com/huggingface/text-generation-inference) endpoint. This is what is done in the official [Chat UI Spaces Docker template](https://huggingface.co/new-space?template=huggingchat/chat-ui-template) for instance: both this app and a text-generation-inference server run inside the same container.
-
-To do this, you can add your own endpoints to the `MODELS` variable in `.env.local`, by adding an `"endpoints"` key for each model in `MODELS`.
-
-```env
-{
-// rest of the model config here
-"endpoints": [{
-  "type" : "tgi",
-  "url": "https://HOST:PORT",
-  }]
-}
-```
-
-If `endpoints` are left unspecified, ChatUI will look for the model on the hosted Hugging Face inference API using the model name.
-
-##### OpenAI API compatible models
-
-Chat UI can be used with any API server that supports OpenAI API compatibility, for example [text-generation-webui](https://github.com/oobabooga/text-generation-webui/tree/main/extensions/openai), [LocalAI](https://github.com/go-skynet/LocalAI), [FastChat](https://github.com/lm-sys/FastChat/blob/main/docs/openai_api.md), [llama-cpp-python](https://github.com/abetlen/llama-cpp-python), and [ialacol](https://github.com/chenhunghan/ialacol).
-
-The following example config makes Chat UI works with [text-generation-webui](https://github.com/oobabooga/text-generation-webui/tree/main/extensions/openai), the `endpoint.baseUrl` is the url of the OpenAI API compatible server, this overrides the baseUrl to be used by OpenAI instance. The `endpoint.completion` determine which endpoint to be used, default is `chat_completions` which uses `v1/chat/completions`, change to `endpoint.completion` to `completions` to use the `v1/completions` endpoint.
+#### 1. Create a new conda environment
 
 ```
-MODELS=`[
-  {
-    "name": "text-generation-webui",
-    "id": "text-generation-webui",
-    "parameters": {
-      "temperature": 0.9,
-      "top_p": 0.95,
-      "repetition_penalty": 1.2,
-      "top_k": 50,
-      "truncate": 1000,
-      "max_new_tokens": 1024,
-      "stop": []
-    },
-    "endpoints": [{
-      "type" : "openai",
-      "baseURL": "http://localhost:8000/v1"
-    }]
-  }
-]`
-
+conda create -n textgen python=3.11
+conda activate textgen
 ```
 
-The `openai` type includes official OpenAI models. You can add, for example, GPT4/GPT3.5 as a "openai" model:
+#### 2. Install Pytorch
+
+| System | GPU | Command |
+|--------|---------|---------|
+| Linux/WSL | NVIDIA | `pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121` |
+| Linux/WSL | CPU only | `pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu` |
+| Linux | AMD | `pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm5.6` |
+| MacOS + MPS | Any | `pip3 install torch torchvision torchaudio` |
+| Windows | NVIDIA | `pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121` |
+| Windows | CPU only | `pip3 install torch torchvision torchaudio` |
+
+The up-to-date commands can be found here: https://pytorch.org/get-started/locally/.
+
+For NVIDIA, you also need to install the CUDA runtime libraries:
 
 ```
-OPENAI_API_KEY=#your openai api key here
-MODELS=`[{
-      "name": "gpt-4",
-      "displayName": "GPT 4",
-      "endpoints" : [{
-        "type": "openai"
-      }]
-},
-      {
-      "name": "gpt-3.5-turbo",
-      "displayName": "GPT 3.5 Turbo",
-      "endpoints" : [{
-        "type": "openai"
-      }]
-}]`
+conda install -y -c "nvidia/label/cuda-12.1.1" cuda-runtime
 ```
 
-##### Llama.cpp API server
+If you need `nvcc` to compile some library manually, replace the command above with
 
-chat-ui also supports the llama.cpp API server directly without the need for an adapter. You can do this using the `llamacpp` endpoint type.
-
-If you want to run chat-ui with llama.cpp, you can do the following, using Zephyr as an example model:
-
-1. Get [the weights](https://huggingface.co/TheBloke/zephyr-7B-beta-GGUF/tree/main) from the hub
-2. Run the server with the following command: `./server -m models/zephyr-7b-beta.Q4_K_M.gguf -c 2048 -np 3`
-3. Add the following to your `.env.local`:
-
-```env
-MODELS=`[
-  {
-      "name": "Local Zephyr",
-      "chatPromptTemplate": "<|system|>\n{{preprompt}}</s>\n{{#each messages}}{{#ifUser}}<|user|>\n{{content}}</s>\n<|assistant|>\n{{/ifUser}}{{#ifAssistant}}{{content}}</s>\n{{/ifAssistant}}{{/each}}",
-      "parameters": {
-        "temperature": 0.1,
-        "top_p": 0.95,
-        "repetition_penalty": 1.2,
-        "top_k": 50,
-        "truncate": 1000,
-        "max_new_tokens": 2048,
-        "stop": ["</s>"]
-      },
-      "endpoints": [
-        {
-         "url": "http://127.0.0.1:8080",
-         "type": "llamacpp"
-        }
-      ]
-  }
-]`
+```
+conda install -y -c "nvidia/label/cuda-12.1.1" cuda
 ```
 
-Start chat-ui with `npm run dev` and you should be able to chat with Zephyr locally.
+#### 3. Install the web UI
 
-#### Ollama
-
-We also support the Ollama inference server. Spin up a model with
-
-```cli
-ollama run mistral
+```
+git clone https://github.com/oobabooga/text-generation-webui
+cd text-generation-webui
+pip install -r <requirements file according to table below>
 ```
 
-Then specify the endpoints like so:
+Requirements file to use:
 
-```env
-MODELS=`[
-  {
-      "name": "Ollama Mistral",
-      "chatPromptTemplate": "<s>{{#each messages}}{{#ifUser}}[INST] {{#if @first}}{{#if @root.preprompt}}{{@root.preprompt}}\n{{/if}}{{/if}} {{content}} [/INST]{{/ifUser}}{{#ifAssistant}}{{content}}</s> {{/ifAssistant}}{{/each}}",
-      "parameters": {
-        "temperature": 0.1,
-        "top_p": 0.95,
-        "repetition_penalty": 1.2,
-        "top_k": 50,
-        "truncate": 3072,
-        "max_new_tokens": 1024,
-        "stop": ["</s>"]
-      },
-      "endpoints": [
-        {
-         "type": "ollama",
-         "url" : "http://127.0.0.1:11434",
-         "ollamaName" : "mistral"
-        }
-      ]
-  }
-]`
+| GPU | CPU | requirements file to use |
+|--------|---------|---------|
+| NVIDIA | has AVX2 | `requirements.txt` |
+| NVIDIA | no AVX2 | `requirements_noavx2.txt` |
+| AMD | has AVX2 | `requirements_amd.txt` |
+| AMD | no AVX2 | `requirements_amd_noavx2.txt` |
+| CPU only | has AVX2 | `requirements_cpu_only.txt` |
+| CPU only | no AVX2 | `requirements_cpu_only_noavx2.txt` |
+| Apple | Intel | `requirements_apple_intel.txt` |
+| Apple | Apple Silicon | `requirements_apple_silicon.txt` |
+
+### Start the web UI
+
+```
+conda activate textgen
+cd text-generation-webui
+python server.py
 ```
 
-#### Amazon
+Then browse to
 
-You can also specify your Amazon SageMaker instance as an endpoint for chat-ui. The config goes like this:
+`http://localhost:7860/?__theme=dark`
 
-```env
-"endpoints": [
-    {
-      "type" : "aws",
-      "service" : "sagemaker"
-      "url": "",
-      "accessKey": "",
-      "secretKey" : "",
-      "sessionToken": "",
-      "region": "",
+##### AMD GPU on Windows
 
-      "weight": 1
-    }
-]
+1) Use `requirements_cpu_only.txt` or `requirements_cpu_only_noavx2.txt` in the command above.
+
+2) Manually install llama-cpp-python using the appropriate command for your hardware: [Installation from PyPI](https://github.com/abetlen/llama-cpp-python#installation-with-hardware-acceleration).
+    * Use the `LLAMA_HIPBLAS=on` toggle.
+    * Note the [Windows remarks](https://github.com/abetlen/llama-cpp-python#windows-remarks).
+
+3) Manually install AutoGPTQ: [Installation](https://github.com/PanQiWei/AutoGPTQ#install-from-source).
+    * Perform the from-source installation - there are no prebuilt ROCm packages for Windows.
+
+##### Older NVIDIA GPUs
+
+1) For Kepler GPUs and older, you will need to install CUDA 11.8 instead of 12:
+
+```
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+conda install -y -c "nvidia/label/cuda-11.8.0" cuda-runtime
 ```
 
-You can also set `"service" : "lambda"` to use a lambda instance.
+2) bitsandbytes >= 0.39 may not work. In that case, to use `--load-in-8bit`, you may have to downgrade like this:
+    * Linux: `pip install bitsandbytes==0.38.1`
+    * Windows: `pip install https://github.com/jllllll/bitsandbytes-windows-webui/raw/main/bitsandbytes-0.38.1-py3-none-any.whl`
 
-You can get the `accessKey` and `secretKey` from your AWS user, under programmatic access.
+##### Manual install
 
-### Custom endpoint authorization
+The `requirements*.txt` above contain various wheels precompiled through GitHub Actions. If you wish to compile things manually, or if you need to because no suitable wheels are available for your hardware, you can use `requirements_nowheels.txt` and then install your desired loaders manually.
 
-#### Basic and Bearer
+### Alternative: Docker
 
-Custom endpoints may require authorization, depending on how you configure them. Authentication will usually be set either with `Basic` or `Bearer`.
-
-For `Basic` we will need to generate a base64 encoding of the username and password.
-
-`echo -n "USER:PASS" | base64`
-
-> VVNFUjpQQVNT
-
-For `Bearer` you can use a token, which can be grabbed from [here](https://huggingface.co/settings/tokens).
-
-You can then add the generated information and the `authorization` parameter to your `.env.local`.
-
-```env
-"endpoints": [
-{
-"url": "https://HOST:PORT",
-"authorization": "Basic VVNFUjpQQVNT",
-}
-]
+```
+ln -s docker/{nvidia/Dockerfile,docker-compose.yml,.dockerignore} .
+cp docker/.env.example .env
+# Edit .env and set: 
+#   TORCH_CUDA_ARCH_LIST based on your GPU model
+#   APP_RUNTIME_GID      your host user's group id (run `id -g` in a terminal)
+#   BUILD_EXTENIONS      optionally add comma separated list of extensions to build
+docker compose up --build
 ```
 
-Please note that if `HF_TOKEN` is also set or not empty, it will take precedence.
+* You need to have Docker Compose v2.17 or higher installed. See [this guide](https://github.com/oobabooga/text-generation-webui/wiki/09-%E2%80%90-Docker) for instructions.
+* For additional docker files, check out [this repository](https://github.com/Atinoda/text-generation-webui-docker).
 
-#### Models hosted on multiple custom endpoints
+### Updating the requirements
 
-If the model being hosted will be available on multiple servers/instances add the `weight` parameter to your `.env.local`. The `weight` will be used to determine the probability of requesting a particular endpoint.
+From time to time, the `requirements*.txt` change. To update, use these commands:
 
-```env
-"endpoints": [
-{
-"url": "https://HOST:PORT",
-"weight": 1
-}
-{
-"url": "https://HOST:PORT",
-"weight": 2
-}
-...
-]
+```
+conda activate textgen
+cd text-generation-webui
+pip install -r <requirements file that you have used> --upgrade
+```
+</details>
+
+<details>
+<summary>
+List of command-line flags
+</summary>
+
+#### Basic settings
+
+| Flag                                       | Description |
+|--------------------------------------------|-------------|
+| `-h`, `--help`                             | show this help message and exit |
+| `--multi-user`                             | Multi-user mode. Chat histories are not saved or automatically loaded. WARNING: this is likely not safe for sharing publicly. |
+| `--character CHARACTER`                    | The name of the character to load in chat mode by default. |
+| `--model MODEL`                            | Name of the model to load by default. |
+| `--lora LORA [LORA ...]`                   | The list of LoRAs to load. If you want to load more than one LoRA, write the names separated by spaces. |
+| `--model-dir MODEL_DIR`                    | Path to directory with all the models. |
+| `--lora-dir LORA_DIR`                      | Path to directory with all the loras. |
+| `--model-menu`                             | Show a model menu in the terminal when the web UI is first launched. |
+| `--settings SETTINGS_FILE`                 | Load the default interface settings from this yaml file. See `settings-template.yaml` for an example. If you create a file called `settings.yaml`, this file will be loaded by default without the need to use the `--settings` flag. |
+| `--extensions EXTENSIONS [EXTENSIONS ...]` | The list of extensions to load. If you want to load more than one extension, write the names separated by spaces. |
+| `--verbose`                                | Print the prompts to the terminal. |
+| `--chat-buttons`                           | Show buttons on the chat tab instead of a hover menu. |
+
+#### Model loader
+
+| Flag                                       | Description |
+|--------------------------------------------|-------------|
+| `--loader LOADER`                          | Choose the model loader manually, otherwise, it will get autodetected. Valid options: Transformers, llama.cpp, llamacpp_HF, ExLlamav2_HF, ExLlamav2, AutoGPTQ, AutoAWQ, GPTQ-for-LLaMa, ctransformers, QuIP#. |
+
+#### Accelerate/transformers
+
+| Flag                                        | Description |
+|---------------------------------------------|-------------|
+| `--cpu`                                     | Use the CPU to generate text. Warning: Training on CPU is extremely slow. |
+| `--auto-devices`                            | Automatically split the model across the available GPU(s) and CPU. |
+|  `--gpu-memory GPU_MEMORY [GPU_MEMORY ...]` | Maximum GPU memory in GiB to be allocated per GPU. Example: --gpu-memory 10 for a single GPU, --gpu-memory 10 5 for two GPUs. You can also set values in MiB like --gpu-memory 3500MiB. |
+| `--cpu-memory CPU_MEMORY`                   | Maximum CPU memory in GiB to allocate for offloaded weights. Same as above. |
+| `--disk`                                    | If the model is too large for your GPU(s) and CPU combined, send the remaining layers to the disk. |
+| `--disk-cache-dir DISK_CACHE_DIR`           | Directory to save the disk cache to. Defaults to "cache". |
+| `--load-in-8bit`                            | Load the model with 8-bit precision (using bitsandbytes). |
+| `--bf16`                                    | Load the model with bfloat16 precision. Requires NVIDIA Ampere GPU. |
+| `--no-cache`                                | Set `use_cache` to `False` while generating text. This reduces VRAM usage slightly, but it comes at a performance cost. |
+| `--trust-remote-code`                       | Set `trust_remote_code=True` while loading the model. Necessary for some models. |
+| `--no_use_fast`                             | Set use_fast=False while loading the tokenizer (it's True by default). Use this if you have any problems related to use_fast. |
+| `--use_flash_attention_2`                   | Set use_flash_attention_2=True while loading the model. |
+
+#### bitsandbytes 4-bit
+
+⚠️  Requires minimum compute of 7.0 on Windows at the moment.
+
+| Flag                                        | Description |
+|---------------------------------------------|-------------|
+| `--load-in-4bit`                            | Load the model with 4-bit precision (using bitsandbytes). |
+| `--use_double_quant`                        | use_double_quant for 4-bit. |
+| `--compute_dtype COMPUTE_DTYPE`             | compute dtype for 4-bit. Valid options: bfloat16, float16, float32. |
+| `--quant_type QUANT_TYPE`                   | quant_type for 4-bit. Valid options: nf4, fp4. |
+
+#### llama.cpp
+
+| Flag        | Description |
+|-------------|-------------|
+| `--tensorcores`  | Use llama-cpp-python compiled with tensor cores support. This increases performance on RTX cards. NVIDIA only. |
+| `--n_ctx N_CTX` | Size of the prompt context. |
+| `--threads` | Number of threads to use. |
+| `--threads-batch THREADS_BATCH` | Number of threads to use for batches/prompt processing. |
+| `--no_mul_mat_q` | Disable the mulmat kernels. |
+| `--n_batch` | Maximum number of prompt tokens to batch together when calling llama_eval. |
+| `--no-mmap`   | Prevent mmap from being used. |
+| `--mlock`     | Force the system to keep the model in RAM. |
+| `--n-gpu-layers N_GPU_LAYERS` | Number of layers to offload to the GPU. |
+| `--tensor_split TENSOR_SPLIT`       | Split the model across multiple GPUs. Comma-separated list of proportions. Example: 18,17. |
+| `--numa`      | Activate NUMA task allocation for llama.cpp. |
+| `--logits_all`| Needs to be set for perplexity evaluation to work. Otherwise, ignore it, as it makes prompt processing slower. |
+| `--no_offload_kqv` | Do not offload the K, Q, V to the GPU. This saves VRAM but reduces the performance. |
+| `--cache-capacity CACHE_CAPACITY`   | Maximum cache capacity (llama-cpp-python). Examples: 2000MiB, 2GiB. When provided without units, bytes will be assumed. |
+
+#### ExLlamav2
+
+| Flag             | Description |
+|------------------|-------------|
+|`--gpu-split`     | Comma-separated list of VRAM (in GB) to use per GPU device for model layers. Example: 20,7,7. |
+|`--max_seq_len MAX_SEQ_LEN`           | Maximum sequence length. |
+|`--cfg-cache`                         | ExLlamav2_HF: Create an additional cache for CFG negative prompts. Necessary to use CFG with that loader. |
+|`--no_flash_attn`                     | Force flash-attention to not be used. |
+|`--cache_8bit`                        | Use 8-bit cache to save VRAM. |
+|`--num_experts_per_token NUM_EXPERTS_PER_TOKEN` |  Number of experts to use for generation. Applies to MoE models like Mixtral. |
+
+#### AutoGPTQ
+
+| Flag             | Description |
+|------------------|-------------|
+| `--triton`                     | Use triton. |
+| `--no_inject_fused_attention`  | Disable the use of fused attention, which will use less VRAM at the cost of slower inference. |
+| `--no_inject_fused_mlp`        | Triton mode only: disable the use of fused MLP, which will use less VRAM at the cost of slower inference. |
+| `--no_use_cuda_fp16`           | This can make models faster on some systems. |
+| `--desc_act`                   | For models that don't have a quantize_config.json, this parameter is used to define whether to set desc_act or not in BaseQuantizeConfig. |
+| `--disable_exllama`            | Disable ExLlama kernel, which can improve inference speed on some systems. |
+| `--disable_exllamav2`          | Disable ExLlamav2 kernel. |
+
+#### GPTQ-for-LLaMa
+
+| Flag                      | Description |
+|---------------------------|-------------|
+| `--wbits WBITS`           | Load a pre-quantized model with specified precision in bits. 2, 3, 4 and 8 are supported. |
+| `--model_type MODEL_TYPE` | Model type of pre-quantized model. Currently LLaMA, OPT, and GPT-J are supported. |
+| `--groupsize GROUPSIZE`   | Group size. |
+| `--pre_layer PRE_LAYER [PRE_LAYER ...]`  | The number of layers to allocate to the GPU. Setting this parameter enables CPU offloading for 4-bit models. For multi-gpu, write the numbers separated by spaces, eg `--pre_layer 30 60`. |
+| `--checkpoint CHECKPOINT` | The path to the quantized checkpoint file. If not specified, it will be automatically detected. |
+| `--monkey-patch`          | Apply the monkey patch for using LoRAs with quantized models. |
+
+#### ctransformers
+
+| Flag        | Description |
+|-------------|-------------|
+| `--model_type MODEL_TYPE` | Model type of pre-quantized model. Currently gpt2, gptj, gptneox, falcon, llama, mpt, starcoder (gptbigcode), dollyv2, and replit are supported. |
+
+#### HQQ
+
+| Flag        | Description |
+|-------------|-------------|
+| `--hqq-backend` | Backend for the HQQ loader. Valid options: PYTORCH, PYTORCH_COMPILE, ATEN. |
+
+#### DeepSpeed
+
+| Flag                                  | Description |
+|---------------------------------------|-------------|
+| `--deepspeed`                         | Enable the use of DeepSpeed ZeRO-3 for inference via the Transformers integration. |
+| `--nvme-offload-dir NVME_OFFLOAD_DIR` | DeepSpeed: Directory to use for ZeRO-3 NVME offloading. |
+| `--local_rank LOCAL_RANK`             | DeepSpeed: Optional argument for distributed setups. |
+
+#### RoPE (for llama.cpp, ExLlamaV2, and transformers)
+
+| Flag             | Description |
+|------------------|-------------|
+| `--alpha_value ALPHA_VALUE`           | Positional embeddings alpha factor for NTK RoPE scaling. Use either this or `compress_pos_emb`, not both. |
+| `--rope_freq_base ROPE_FREQ_BASE`     | If greater than 0, will be used instead of alpha_value. Those two are related by `rope_freq_base = 10000 * alpha_value ^ (64 / 63)`. |
+| `--compress_pos_emb COMPRESS_POS_EMB` | Positional embeddings compression factor. Should be set to `(context length) / (model's original context length)`. Equal to `1/rope_freq_scale`. |
+
+#### Gradio
+
+| Flag                                  | Description |
+|---------------------------------------|-------------|
+| `--listen`                            | Make the web UI reachable from your local network. |
+| `--listen-port LISTEN_PORT`           | The listening port that the server will use. |
+| `--listen-host LISTEN_HOST`           | The hostname that the server will use. |
+| `--share`                             | Create a public URL. This is useful for running the web UI on Google Colab or similar. |
+| `--auto-launch`                       | Open the web UI in the default browser upon launch. |
+| `--gradio-auth USER:PWD`              | Set Gradio authentication password in the format "username:password". Multiple credentials can also be supplied with "u1:p1,u2:p2,u3:p3". |
+| `--gradio-auth-path GRADIO_AUTH_PATH` | Set the Gradio authentication file path. The file should contain one or more user:password pairs in the same format as above. |
+| `--ssl-keyfile SSL_KEYFILE`           | The path to the SSL certificate key file. |
+| `--ssl-certfile SSL_CERTFILE`         | The path to the SSL certificate cert file. |
+
+#### API
+
+| Flag                                  | Description |
+|---------------------------------------|-------------|
+| `--api`                               | Enable the API extension. |
+| `--public-api`                        | Create a public URL for the API using Cloudfare. |
+| `--public-api-id PUBLIC_API_ID`       | Tunnel ID for named Cloudflare Tunnel. Use together with public-api option. |
+| `--api-port API_PORT`                 | The listening port for the API. |
+| `--api-key API_KEY`                   | API authentication key. |
+| `--admin-key ADMIN_KEY`               | API authentication key for admin tasks like loading and unloading models. If not set, will be the same as --api-key. |
+| `--nowebui`                           | Do not launch the Gradio UI. Useful for launching the API in standalone mode. |
+
+#### Multimodal
+
+| Flag                                  | Description |
+|---------------------------------------|-------------|
+| `--multimodal-pipeline PIPELINE`      | The multimodal pipeline to use. Examples: `llava-7b`, `llava-13b`. |
+
+</details>
+
+## Documentation
+
+https://github.com/oobabooga/text-generation-webui/wiki
+
+## Downloading models
+
+Models should be placed in the folder `text-generation-webui/models`. They are usually downloaded from [Hugging Face](https://huggingface.co/models?pipeline_tag=text-generation&sort=downloads).
+
+* GGUF models are a single file and should be placed directly into `models`. Example:
+
+```
+text-generation-webui
+└── models
+    └── llama-2-13b-chat.Q4_K_M.gguf
 ```
 
-#### Client Certificate Authentication (mTLS)
+* The remaining model types (like 16-bit transformers models and GPTQ models) are made of several files and must be placed in a subfolder. Example:
 
-Custom endpoints may require client certificate authentication, depending on how you configure them. To enable mTLS between Chat UI and your custom endpoint, you will need to set the `USE_CLIENT_CERTIFICATE` to `true`, and add the `CERT_PATH` and `KEY_PATH` parameters to your `.env.local`. These parameters should point to the location of the certificate and key files on your local machine. The certificate and key files should be in PEM format. The key file can be encrypted with a passphrase, in which case you will also need to add the `CLIENT_KEY_PASSWORD` parameter to your `.env.local`.
-
-If you're using a certificate signed by a private CA, you will also need to add the `CA_PATH` parameter to your `.env.local`. This parameter should point to the location of the CA certificate file on your local machine.
-
-If you're using a self-signed certificate, e.g. for testing or development purposes, you can set the `REJECT_UNAUTHORIZED` parameter to `false` in your `.env.local`. This will disable certificate validation, and allow Chat UI to connect to your custom endpoint.
-
-#### Specific Embedding Model
-
-A model can use any of the embedding models defined in `.env.local`, (currently used when web searching),
-by default it will use the first embedding model, but it can be changed with the field `embeddingModel`:
-
-```env
-TEXT_EMBEDDING_MODELS = `[
-  {
-    "name": "Xenova/gte-small",
-    "chunkCharLength": 512,
-    "endpoints": [
-      {"type": "transformersjs"}
-    ]
-  },
-  {
-    "name": "intfloat/e5-base-v2",
-    "chunkCharLength": 768,
-    "endpoints": [
-      {"type": "tei", "url": "http://127.0.0.1:8080/", "authorization": "Basic VVNFUjpQQVNT"},
-      {"type": "tei", "url": "http://127.0.0.1:8081/"}
-    ]
-  }
-]`
-
-MODELS=`[
-  {
-      "name": "Ollama Mistral",
-      "chatPromptTemplate": "...",
-      "embeddingModel": "intfloat/e5-base-v2"
-      "parameters": {
-        ...
-      },
-      "endpoints": [
-        ...
-      ]
-  }
-]`
+```
+text-generation-webui
+├── models
+│   ├── lmsys_vicuna-33b-v1.3
+│   │   ├── config.json
+│   │   ├── generation_config.json
+│   │   ├── pytorch_model-00001-of-00007.bin
+│   │   ├── pytorch_model-00002-of-00007.bin
+│   │   ├── pytorch_model-00003-of-00007.bin
+│   │   ├── pytorch_model-00004-of-00007.bin
+│   │   ├── pytorch_model-00005-of-00007.bin
+│   │   ├── pytorch_model-00006-of-00007.bin
+│   │   ├── pytorch_model-00007-of-00007.bin
+│   │   ├── pytorch_model.bin.index.json
+│   │   ├── special_tokens_map.json
+│   │   ├── tokenizer_config.json
+│   │   └── tokenizer.model
 ```
 
-## Deploying to a HF Space
+In both cases, you can use the "Model" tab of the UI to download the model from Hugging Face automatically. It is also possible to download it via the command-line with 
 
-Create a `DOTENV_LOCAL` secret to your HF space with the content of your .env.local, and they will be picked up automatically when you run.
-
-## Building
-
-To create a production version of your app:
-
-```bash
-npm run build
+```
+python download-model.py organization/model
 ```
 
-You can preview the production build with `npm run preview`.
+Run `python download-model.py --help` to see all the options.
 
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+## Google Colab notebook
 
-## Config changes for HuggingChat
+https://colab.research.google.com/github/oobabooga/text-generation-webui/blob/main/Colab-TextGen-GPU.ipynb
 
-The config file for HuggingChat is stored in the `.env.template` file at the root of the repository. It is the single source of truth that is used to generate the actual `.env.local` file using our CI/CD pipeline. See [updateProdEnv](https://github.com/huggingface/chat-ui/blob/cdb33a9583f5339ade724db615347393ef48f5cd/scripts/updateProdEnv.ts) for more details.
+## Contributing
 
-> [!TIP]
-> If you want to make changes to model config for HuggingChat, you should do so against `.env.template`.
+If you would like to contribute to the project, check out the [Contributing guidelines](https://github.com/oobabooga/text-generation-webui/wiki/Contributing-guidelines).
 
-We currently use the following secrets for deploying HuggingChat in addition to the `.env.template` above:
+## Community
 
-- `MONGODB_URL`
-- `HF_TOKEN`
-- `OPENID_CONFIG`
-- `SERPER_API_KEY`
+* Subreddit: https://www.reddit.com/r/oobabooga/
+* Discord: https://discord.gg/jwZCF2dPQN
 
-They are defined as secrets in the repository.
+## Acknowledgment & support
 
-### Testing config changes locally
+In August 2023, [Andreessen Horowitz](https://a16z.com/) (a16z) provided a generous grant to encourage and support my independent work on this project. I am **extremely** grateful for their trust and recognition.
 
-You can test the config changes locally by first creating an `.env.SECRET_CONFIG` file with the secrets defined above. Then you can run the following command to generate the `.env.local` file:
-
-```bash
-npm run updateLocalEnv
-```
-
-This will replace your `.env.local` file with the one that will be used in prod (simply taking `.env.template + .env.SECRET_CONFIG`).
+If you find this project useful, I have a [Ko-fi page](https://ko-fi.com/oobabooga) where you can make a donation. Your support helps me continue maintaining and improving this project.
