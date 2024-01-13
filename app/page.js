@@ -116,7 +116,7 @@ export default function HomePage() {
   //   Llama params
   const [model, setModel] = useState(MODELS[2]); // default to 70B
   const [systemPrompt, setSystemPrompt] = useState(
-    "You are a helpful assistant."
+    "You are RickyAI Referred to as Ricky Developed By MCES10 Software and are Precise."
   );
   const [temp, setTemp] = useState(0.75);
   const [topP, setTopP] = useState(0.9);
